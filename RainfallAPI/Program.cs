@@ -1,5 +1,7 @@
 using Microsoft.OpenApi.Models;
 using RainfallAPI.Extensions;
+using RainfallAPI.Interfaces;
+using RainfallAPI.Services;
 
 namespace RainfallAPI
 {
@@ -11,6 +13,8 @@ namespace RainfallAPI
             string url = Utils.Environment.GetFirstUrlFromLaunchSettings();
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddHttpClient();
+            builder.Services.AddScoped<IRainfallDataService, RainfallDataService>();
             builder.Services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo
@@ -25,6 +29,7 @@ namespace RainfallAPI
                     Description = "Rainfall Api"
                 });
                 c.DocumentFilter<AddTagsDocumentFilter>();
+                c.EnableAnnotations();
             });
 
             var app = builder.Build();
