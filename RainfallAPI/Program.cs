@@ -2,6 +2,9 @@ using Microsoft.OpenApi.Models;
 using RainfallAPI.Extensions;
 using RainfallAPI.Interfaces;
 using RainfallAPI.Services;
+using System.Reflection;
+using AutoMapper;
+using RainfallAPI.Automapper;
 
 namespace RainfallAPI
 {
@@ -15,6 +18,7 @@ namespace RainfallAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddHttpClient();
             builder.Services.AddScoped<IRainfallDataService, RainfallDataService>();
+            builder.Services.AddAutoMapper(typeof(MappingProfile));
             builder.Services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo
@@ -30,6 +34,11 @@ namespace RainfallAPI
                 });
                 c.DocumentFilter<AddTagsDocumentFilter>();
                 c.EnableAnnotations();
+
+                // Set the comments path for the Swagger JSON and UI.
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
             });
 
             var app = builder.Build();

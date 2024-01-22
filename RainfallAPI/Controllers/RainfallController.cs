@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using RainfallAPI.Interfaces;
 using RainfallAPI.Models.ResponseModels;
 using RainfallAPI.Models.ViewModels;
@@ -13,45 +14,49 @@ namespace RainfallAPI.Controllers
     public class RainfallController : ControllerBase
     {
         private readonly IRainfallDataService _dataService;
-        public RainfallController(IRainfallDataService dataService) 
+        private readonly IMapper _mapper;
+        public RainfallController(IRainfallDataService dataService, IMapper mapper) 
         {
             _dataService = dataService;
+            _mapper = mapper;
         }
 
         [HttpGet("id/{stationId}/readings")]
-        [SwaggerOperation(Summary = "Get Rainfall Readings", Description = "Retrieve rainfall data for a specific station.")]
+        [Produces("application/json")]
+        [SwaggerOperation(OperationId = "get-rainfall", Summary = "Get rainfall readings by station Id", Description = "Retrieve the latest readings for the specified stationId")]
         [SwaggerResponse(StatusCodes.Status200OK, Type = typeof(RainfallReadingResponse), Description = "A list of rainfall readings successfully retrieved")]
-        [SwaggerResponse(StatusCodes.Status400BadRequest, Type = typeof(Error), Description = "Invalid request")]
-        [SwaggerResponse(StatusCodes.Status404NotFound, Type = typeof(Error), Description = "No readings found for the specified stationId")]
-        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(Error), Description = "Internal server error")]
+        [SwaggerResponse(StatusCodes.Status400BadRequest, Type = typeof(ErrorResponse), Description = "Invalid request")]
+        [SwaggerResponse(StatusCodes.Status404NotFound, Type = typeof(ErrorResponse), Description = "No readings found for the specified stationId")]
+        [SwaggerResponse(StatusCodes.Status500InternalServerError, Type = typeof(ErrorResponse), Description = "Internal server error")]
         public async Task<IActionResult> GetRainfallReadingsByStation(
             [FromRoute]
-            [SwaggerParameter("The id of the reading station.", Required = true)]   
+            [SwaggerParameter("The id of the reading station", Required = true)]   
             string stationId,
 
             [FromQuery]
             [Range(1, 100, ErrorMessage = "Count must be between 1 and 100.")]
-            [SwaggerParameter("Count of readings (between 1 and 100).", Required = false)] int count = 10)
+            [SwaggerParameter("The number of readings to return", Required = false)] int count = 10)
         {
             try
             {
                 var readingsData = (await _dataService.GetRainfallDataAsync(stationId, count)).ToList();
                 if (readingsData == null || readingsData.Count == 0) 
                 {
-                    return NotFound(new Error { Message = "No readings found for the specified stationId." });
+                    return NotFound(new ErrorResponse { Message = "No readings found for the specified stationId." });
                 }
-                return Ok(readingsData);
+                var mappedReadigs = _mapper.Map<IEnumerable<RainfallReading>>(readingsData);
+                return Ok(mappedReadigs);
             }
             catch (HttpRequestException ex)
             {
                 var errorDetails = ErrorHelper.ExtractErrorDetails(ex.Data);
-                var error = new Error { Message = "Invalid request.", Detail = errorDetails };
+                var error = new ErrorResponse { Message = "Invalid request.", Detail = errorDetails };
                 return StatusCode(StatusCodes.Status400BadRequest, error);
             }
             catch (Exception ex)
             {
                 var errorDetails = ErrorHelper.ExtractErrorDetails(ex.Data);
-                var error = new Error { Message = "Internal Server Error.", Detail = errorDetails };
+                var error = new ErrorResponse { Message = "Internal Server Error.", Detail = errorDetails };
                 return StatusCode(StatusCodes.Status500InternalServerError, error);
             }
         }
