@@ -36,11 +36,7 @@ namespace RainfallAPI.Services
             }
             catch (HttpRequestException ex)
             {
-                throw new InvalidOperationException("Error fetching data from the API.", ex);
-            }
-            catch (JsonException ex)
-            {
-                throw new InvalidOperationException("Error parsing API response.", ex);
+                throw new InvalidOperationException("Invalid request to the API.", ex);
             }
             catch (Exception ex)
             {
